@@ -23,7 +23,7 @@ export class UserService {
   }
 
   getById(id: string): UserResponseDto {
-    const user = this.getFullUserById(id);
+    const user = this.getUserOrThrow(id);
     return plainToInstance(UserResponseDto, user);
   }
 
@@ -46,7 +46,7 @@ export class UserService {
   updatePassword(id: string, dto: UpdatePasswordDto): UserResponseDto {
     if (!dto.oldPassword || !dto.newPassword) throw MissingFieldsException();
 
-    const user = this.getFullUserById(id);
+    const user = this.getUserOrThrow(id);
 
     if (user.password !== dto.oldPassword) throw InvalidOldPasswordException();
 
@@ -58,11 +58,11 @@ export class UserService {
   }
 
   delete(id: string): void {
-    const user = this.getFullUserById(id);
+    const user = this.getUserOrThrow(id);
     return this.storage.users.delete(user.id);
   }
 
-  private getFullUserById(id: string): User {
+  private getUserOrThrow(id: string): User {
     if (!isUUID(id)) throw InvalidUUIDException();
     const user = this.storage.users.findById(id);
     if (!user) throw UserNotFoundException();

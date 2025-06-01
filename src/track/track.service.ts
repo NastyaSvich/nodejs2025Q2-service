@@ -22,7 +22,7 @@ export class TrackService {
   }
 
   getById(id: string): TrackResponseDto {
-    const track = this.getFullTrackById(id);
+    const track = this.getTrackOrThrow(id);
     return plainToInstance(TrackResponseDto, track);
   }
 
@@ -44,7 +44,7 @@ export class TrackService {
   update(id: string, dto: UpdateTrackDto): TrackResponseDto {
     this.validateOnRequiredFields(dto);
 
-    const track = this.getFullTrackById(id);
+    const track = this.getTrackOrThrow(id);
 
     Object.assign(track, {
       ...dto,
@@ -55,11 +55,11 @@ export class TrackService {
   }
 
   delete(id: string): void {
-    const track = this.getFullTrackById(id);
+    const track = this.getTrackOrThrow(id);
     this.storage.tracks.delete(track.id);
   }
 
-  private getFullTrackById(id: string): Track {
+  private getTrackOrThrow(id: string): Track {
     if (!isUUID(id)) throw InvalidUUIDException();
     const track = this.storage.tracks.findById(id);
     if (!track) throw TrackNotFoundException();

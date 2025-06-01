@@ -22,7 +22,7 @@ export class ArtistService {
   }
 
   getById(id: string): ArtistResponseDto {
-    const artist = this.getFullArtistById(id);
+    const artist = this.getArtistOrThrow(id);
     return plainToInstance(ArtistResponseDto, artist);
   }
 
@@ -42,7 +42,7 @@ export class ArtistService {
   update(id: string, dto: UpdateArtistDto): ArtistResponseDto {
     this.validateOnRequiredFields(dto);
 
-    const artist = this.getFullArtistById(id);
+    const artist = this.getArtistOrThrow(id);
 
     Object.assign(artist, {
       ...dto,
@@ -53,11 +53,11 @@ export class ArtistService {
   }
 
   delete(id: string): void {
-    const artist = this.getFullArtistById(id);
+    const artist = this.getArtistOrThrow(id);
     this.storage.artists.delete(artist.id);
   }
 
-  private getFullArtistById(id: string): Artist {
+  private getArtistOrThrow(id: string): Artist {
     if (!isUUID(id)) throw InvalidUUIDException();
     const artist = this.storage.artists.findById(id);
     if (!artist) throw ArtistNotFoundException();

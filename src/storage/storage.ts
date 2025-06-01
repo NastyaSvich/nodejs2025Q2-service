@@ -1,6 +1,7 @@
 import { Track } from '../track/entities/track.entity';
 import { User } from '../user/entities/user.entity';
 import { Artist } from '../artist/entities/artist.entity';
+import { Album } from '../album/entities/album.entity';
 
 class StorageManager<T extends { id: string }> {
   private items: Array<T> = [];
@@ -33,10 +34,12 @@ export type Storage = {
   users: StorageManager<User>;
   tracks: StorageManager<Track>;
   artists: StorageManager<Artist>;
+  albums: StorageManager<Album>;
 };
 
 export const storage: Storage = {
   users: new StorageManager(),
   tracks: new StorageManager(),
   artists: new StorageManager(),
+  albums: new StorageManager(),
 };

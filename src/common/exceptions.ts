@@ -21,3 +21,6 @@ export const TrackNotFoundException = () =>
 
 export const ArtistNotFoundException = () =>
   new NotFoundException('Artist not found');
+
+export const AlbumNotFoundException = () =>
+  new NotFoundException('Album not found');
