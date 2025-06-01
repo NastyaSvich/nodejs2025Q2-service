@@ -1,12 +1,42 @@
-import { Users } from './users';
-import { Tracks } from './tracks';
+import { Track } from '../track/entities/track.entity';
+import { User } from '../user/entities/user.entity';
+import { Artist } from '../artist/entities/artist.entity';
+
+class StorageManager<T extends { id: string }> {
+  private items: Array<T> = [];
+
+  findAll(): Array<T> {
+    return [...this.items];
+  }
+
+  findById(id: string): T | undefined {
+    return this.items.find((item) => item.id === id);
+  }
+
+  create(item: T): T {
+    this.items.push(item);
+    return item;
+  }
+
+  update(item: T): T {
+    const index = this.items.findIndex((tr) => tr.id === item.id);
+    this.items[index] = item;
+    return item;
+  }
+
+  delete(id: string): void {
+    this.items = this.items.filter((item) => item.id !== id);
+  }
+}
 
 export type Storage = {
-  users: Users;
-  tracks: Tracks;
+  users: StorageManager<User>;
+  tracks: StorageManager<Track>;
+  artists: StorageManager<Artist>;
 };
 
 export const storage: Storage = {
-  users: new Users(),
-  tracks: new Tracks(),
+  users: new StorageManager(),
+  tracks: new StorageManager(),
+  artists: new StorageManager(),
 };

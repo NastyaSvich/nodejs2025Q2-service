@@ -18,3 +18,6 @@ export const UserNotFoundException = () =>
 
 export const TrackNotFoundException = () =>
   new NotFoundException('Tracks not found');
+
+export const ArtistNotFoundException = () =>
+  new NotFoundException('Artist not found');
