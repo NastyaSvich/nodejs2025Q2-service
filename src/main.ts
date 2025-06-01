@@ -5,9 +5,15 @@ import { parse } from 'yaml';
 import { resolve } from 'path';
 import { readFile } from 'fs/promises';
 import { ConfigService } from '@nestjs/config';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+    }),
+  );
 
   const swaggerPath = resolve(__dirname, '..', 'doc', 'api.yaml');
   const swaggerFile = await readFile(swaggerPath, 'utf-8');
