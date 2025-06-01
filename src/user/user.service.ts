@@ -44,6 +44,8 @@ export class UserService {
   }
 
   updatePassword(id: string, dto: UpdatePasswordDto): UserResponseDto {
+    if (!dto.oldPassword || !dto.newPassword) throw MissingFieldsException();
+
     const user = this.getFullUserById(id);
 
     if (user.password !== dto.oldPassword) throw InvalidOldPasswordException();
@@ -51,8 +53,8 @@ export class UserService {
     user.password = dto.newPassword;
     user.version++;
     user.updatedAt = Date.now();
-    const updUser = this.storage.users.update(user);
-    return plainToInstance(UserResponseDto, updUser);
+    const updatedUser = this.storage.users.update(user);
+    return plainToInstance(UserResponseDto, updatedUser);
   }
 
   delete(id: string): void {
