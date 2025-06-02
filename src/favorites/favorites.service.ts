@@ -93,7 +93,10 @@ export class FavoritesService {
       throw EntityNotFoundException();
     }
 
-    this.storage.favorites[entityType].push(entity.id);
+    const favoritesArray = this.storage.favorites[entityType];
+    if (!favoritesArray.includes(entity.id)) {
+      favoritesArray.push(entity.id);
+    }
   }
 
   private delete(
