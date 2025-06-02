@@ -10,11 +10,17 @@ import {
 } from '../common/exceptions';
 import { Storage } from '../storage/Storage';
 import { plainToInstance } from 'class-transformer';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ArtistResponseDto } from './dto/artist-response.dto';
+
+export const ARTIST_DELETED_EVENT = 'artist.deleted' as const;
 
 @Injectable()
 export class ArtistService {
-  constructor(@Inject('STORAGE') private readonly storage: Storage) {}
+  constructor(
+    @Inject('STORAGE') private readonly storage: Storage,
+    private readonly emitter: EventEmitter2,
+  ) {}
 
   getAll(): ArtistResponseDto[] {
     return plainToInstance(ArtistResponseDto, this.storage.artists);
@@ -52,6 +58,7 @@ export class ArtistService {
     this.storage.artists = this.storage.artists.filter(
       (a) => a.id !== artist.id,
     );
+    this.emitter.emit(ARTIST_DELETED_EVENT, id);
   }
 
   private getArtistOrThrow(id: string): Artist {

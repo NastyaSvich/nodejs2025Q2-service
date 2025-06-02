@@ -11,10 +11,31 @@ import {
 import { Storage } from '../storage/Storage';
 import { plainToInstance } from 'class-transformer';
 import { TrackResponseDto } from './dto/track-response.dto';
+import { OnEvent } from '@nestjs/event-emitter';
+import { ARTIST_DELETED_EVENT } from '../artist/artist.service';
+import { ALBUM_DELETED_EVENT } from '../album/album.service';
 
 @Injectable()
 export class TrackService {
   constructor(@Inject('STORAGE') private readonly storage: Storage) {}
+
+  @OnEvent(ARTIST_DELETED_EVENT)
+  onArtistDeleted(id: string) {
+    this.storage.tracks.forEach((track: Track) => {
+      if (track.artistId === id) {
+        track.artistId = null;
+      }
+    });
+  }
+
+  @OnEvent(ALBUM_DELETED_EVENT)
+  onAlbumDeleted(id: string) {
+    this.storage.tracks.forEach((track: Track) => {
+      if (track.albumId === id) {
+        track.albumId = null;
+      }
+    });
+  }
 
   getAll(): TrackResponseDto[] {
     return plainToInstance(TrackResponseDto, this.storage.tracks);
