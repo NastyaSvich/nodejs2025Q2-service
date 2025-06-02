@@ -18,8 +18,7 @@ export class UserService {
   constructor(@Inject('STORAGE') private readonly storage: Storage) {}
 
   getAll(): UserResponseDto[] {
-    const users = this.storage.users.findAll();
-    return plainToInstance(UserResponseDto, users);
+    return plainToInstance(UserResponseDto, this.storage.users);
   }
 
   getById(id: string): UserResponseDto {
@@ -39,8 +38,8 @@ export class UserService {
       updatedAt: Date.now(),
     };
 
-    const user = this.storage.users.create(newUser);
-    return plainToInstance(UserResponseDto, user);
+    this.storage.users.push(newUser);
+    return plainToInstance(UserResponseDto, newUser);
   }
 
   updatePassword(id: string, dto: UpdatePasswordDto): UserResponseDto {
@@ -53,18 +52,18 @@ export class UserService {
     user.password = dto.newPassword;
     user.version++;
     user.updatedAt = Date.now();
-    const updatedUser = this.storage.users.update(user);
-    return plainToInstance(UserResponseDto, updatedUser);
+
+    return plainToInstance(UserResponseDto, user);
   }
 
   delete(id: string): void {
     const user = this.getUserOrThrow(id);
-    return this.storage.users.delete(user.id);
+    this.storage.users = this.storage.users.filter((u) => u.id !== user.id);
   }
 
   private getUserOrThrow(id: string): User {
     if (!isUUID(id)) throw InvalidUUIDException();
-    const user = this.storage.users.findById(id);
+    const user = this.storage.users.find((user) => user.id === id);
     if (!user) throw UserNotFoundException();
     return user;
   }

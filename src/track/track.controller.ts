@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { TrackService } from './track.service';
 import { CreateTrackDto } from './dto/create-track.dto';
@@ -37,7 +38,7 @@ export class TrackController {
   }
 
   @Delete(':id')
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     this.trackService.delete(id);
   }

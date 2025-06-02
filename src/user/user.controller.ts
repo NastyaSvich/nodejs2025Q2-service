@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -37,7 +38,7 @@ export class UserController {
   }
 
   @Delete(':id')
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     this.userService.delete(id);
   }

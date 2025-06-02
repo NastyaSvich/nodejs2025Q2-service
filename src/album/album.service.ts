@@ -10,16 +10,14 @@ import {
 } from '../common/exceptions';
 import { Storage } from '../storage/Storage';
 import { plainToInstance } from 'class-transformer';
-import { TrackResponseDto } from '../track/dto/track-response.dto';
 import { AlbumResponseDto } from './dto/album-response.dto';
-import { Track } from '../track/entities/track.entity';
 
 @Injectable()
 export class AlbumService {
   constructor(@Inject('STORAGE') private readonly storage: Storage) {}
 
-  getAll(): Album[] {
-    return this.storage.albums.findAll();
+  getAll(): AlbumResponseDto[] {
+    return plainToInstance(AlbumResponseDto, this.storage.albums);
   }
 
   getById(id: string): AlbumResponseDto {
@@ -37,31 +35,27 @@ export class AlbumService {
       artistId: dto.artistId ?? null,
     };
 
-    const album = this.storage.albums.create(newAlbum);
-    return plainToInstance(AlbumResponseDto, album);
+    this.storage.albums.push(newAlbum);
+    return plainToInstance(AlbumResponseDto, newAlbum);
   }
 
   update(id: string, dto: UpdateAlbumDto): AlbumResponseDto {
     this.validateOnRequiredFields(dto);
 
     const album = this.getAlbumOrThrow(id);
+    Object.assign(album, dto);
 
-    Object.assign(album, {
-      ...dto,
-    });
-
-    const updatedAlbum = this.storage.albums.update(album);
-    return plainToInstance(AlbumResponseDto, updatedAlbum);
+    return plainToInstance(AlbumResponseDto, album);
   }
 
   delete(id: string): void {
     const album = this.getAlbumOrThrow(id);
-    this.storage.albums.delete(album.id);
+    this.storage.albums = this.storage.albums.filter((a) => a.id !== album.id);
   }
 
   private getAlbumOrThrow(id: string): Album {
     if (!isUUID(id)) throw InvalidUUIDException();
-    const album = this.storage.albums.findById(id);
+    const album = this.storage.albums.find((album) => album.id === id);
     if (!album) throw AlbumNotFoundException();
     return album;
   }

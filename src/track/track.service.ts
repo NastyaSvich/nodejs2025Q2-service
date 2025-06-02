@@ -17,8 +17,7 @@ export class TrackService {
   constructor(@Inject('STORAGE') private readonly storage: Storage) {}
 
   getAll(): TrackResponseDto[] {
-    const tracks = this.storage.tracks.findAll();
-    return plainToInstance(TrackResponseDto, tracks);
+    return plainToInstance(TrackResponseDto, this.storage.tracks);
   }
 
   getById(id: string): TrackResponseDto {
@@ -37,8 +36,8 @@ export class TrackService {
       duration: dto.duration,
     };
 
-    const track = this.storage.tracks.create(newTrack);
-    return plainToInstance(TrackResponseDto, track);
+    this.storage.tracks.push(newTrack);
+    return plainToInstance(TrackResponseDto, newTrack);
   }
 
   update(id: string, dto: UpdateTrackDto): TrackResponseDto {
@@ -46,22 +45,19 @@ export class TrackService {
 
     const track = this.getTrackOrThrow(id);
 
-    Object.assign(track, {
-      ...dto,
-    });
+    Object.assign(track, dto);
 
-    const updatedTrack = this.storage.tracks.update(track);
-    return plainToInstance(TrackResponseDto, updatedTrack);
+    return plainToInstance(TrackResponseDto, track);
   }
 
   delete(id: string): void {
     const track = this.getTrackOrThrow(id);
-    this.storage.tracks.delete(track.id);
+    this.storage.tracks = this.storage.tracks.filter((t) => t.id !== track.id);
   }
 
   private getTrackOrThrow(id: string): Track {
     if (!isUUID(id)) throw InvalidUUIDException();
-    const track = this.storage.tracks.findById(id);
+    const track = this.storage.tracks.find((track) => track.id === id);
     if (!track) throw TrackNotFoundException();
     return track;
   }

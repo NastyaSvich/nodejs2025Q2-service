@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ArtistService } from './artist.service';
 import { CreateArtistDto } from './dto/create-artist.dto';
@@ -37,7 +38,7 @@ export class ArtistController {
   }
 
   @Delete(':id')
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     this.artistService.delete(id);
   }

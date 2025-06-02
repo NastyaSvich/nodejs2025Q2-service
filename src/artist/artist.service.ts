@@ -17,8 +17,7 @@ export class ArtistService {
   constructor(@Inject('STORAGE') private readonly storage: Storage) {}
 
   getAll(): ArtistResponseDto[] {
-    const artists = this.storage.artists.findAll();
-    return plainToInstance(ArtistResponseDto, artists);
+    return plainToInstance(ArtistResponseDto, this.storage.artists);
   }
 
   getById(id: string): ArtistResponseDto {
@@ -35,31 +34,29 @@ export class ArtistService {
       grammy: dto.grammy,
     };
 
-    const artist = this.storage.artists.create(newArtist);
-    return plainToInstance(ArtistResponseDto, artist);
+    this.storage.artists.push(newArtist);
+    return plainToInstance(ArtistResponseDto, newArtist);
   }
 
   update(id: string, dto: UpdateArtistDto): ArtistResponseDto {
     this.validateOnRequiredFields(dto);
 
     const artist = this.getArtistOrThrow(id);
+    Object.assign(artist, dto);
 
-    Object.assign(artist, {
-      ...dto,
-    });
-
-    const updatedArtist = this.storage.artists.update(artist);
-    return plainToInstance(ArtistResponseDto, updatedArtist);
+    return plainToInstance(ArtistResponseDto, artist);
   }
 
   delete(id: string): void {
     const artist = this.getArtistOrThrow(id);
-    this.storage.artists.delete(artist.id);
+    this.storage.artists = this.storage.artists.filter(
+      (a) => a.id !== artist.id,
+    );
   }
 
   private getArtistOrThrow(id: string): Artist {
     if (!isUUID(id)) throw InvalidUUIDException();
-    const artist = this.storage.artists.findById(id);
+    const artist = this.storage.artists.find((artist) => artist.id === id);
     if (!artist) throw ArtistNotFoundException();
     return artist;
   }
