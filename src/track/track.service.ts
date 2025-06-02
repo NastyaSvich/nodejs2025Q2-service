@@ -11,13 +11,18 @@ import {
 import { Storage } from '../storage/Storage';
 import { plainToInstance } from 'class-transformer';
 import { TrackResponseDto } from './dto/track-response.dto';
-import { OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { ARTIST_DELETED_EVENT } from '../artist/artist.service';
 import { ALBUM_DELETED_EVENT } from '../album/album.service';
 
+export const TRACK_DELETED_EVENT = 'track.deleted' as const;
+
 @Injectable()
 export class TrackService {
-  constructor(@Inject('STORAGE') private readonly storage: Storage) {}
+  constructor(
+    @Inject('STORAGE') private readonly storage: Storage,
+    private readonly emitter: EventEmitter2,
+  ) {}
 
   @OnEvent(ARTIST_DELETED_EVENT)
   onArtistDeleted(id: string) {
@@ -74,6 +79,7 @@ export class TrackService {
   delete(id: string): void {
     const track = this.getTrackOrThrow(id);
     this.storage.tracks = this.storage.tracks.filter((t) => t.id !== track.id);
+    this.emitter.emit(TRACK_DELETED_EVENT, id);
   }
 
   private getTrackOrThrow(id: string): Track {

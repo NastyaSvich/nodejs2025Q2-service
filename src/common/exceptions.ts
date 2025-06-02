@@ -2,6 +2,7 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 
 export const InvalidUUIDException = () =>
@@ -24,3 +25,6 @@ export const ArtistNotFoundException = () =>
 
 export const AlbumNotFoundException = () =>
   new NotFoundException('Album not found');
+
+export const EntityNotFoundException = () =>
+  new UnprocessableEntityException('Unprocessable entity');
