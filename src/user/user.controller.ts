@@ -40,6 +40,6 @@ export class UserController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    this.userService.delete(id);
+    return this.userService.delete(id);
   }
 }

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { v4 as uuidv4, validate as isUUID } from 'uuid';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -9,43 +9,51 @@ import {
   MissingFieldsException,
   InvalidOldPasswordException,
 } from '../common/exceptions';
-import { Storage } from '../storage/Storage';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from './dto/user-response.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
-  constructor(@Inject('STORAGE') private readonly storage: Storage) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
-  getAll(): UserResponseDto[] {
-    return plainToInstance(UserResponseDto, this.storage.users);
+  async getAll(): Promise<UserResponseDto[]> {
+    const users = await this.userRepository.find();
+    return plainToInstance(UserResponseDto, users);
   }
 
-  getById(id: string): UserResponseDto {
-    const user = this.getUserOrThrow(id);
+  async getById(id: string): Promise<UserResponseDto> {
+    const user = await this.getUserOrThrow(id);
     return plainToInstance(UserResponseDto, user);
   }
 
-  create(dto: CreateUserDto): UserResponseDto {
+  async create(dto: CreateUserDto): Promise<UserResponseDto> {
     if (!dto.login || !dto.password) throw MissingFieldsException();
 
-    const newUser: User = {
+    const newUser = this.userRepository.create({
       id: uuidv4(),
       login: dto.login,
       password: dto.password,
       version: 1,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-    };
+    });
 
-    this.storage.users.push(newUser);
-    return plainToInstance(UserResponseDto, newUser);
+    const savedUser = await this.userRepository.save(newUser);
+    return plainToInstance(UserResponseDto, savedUser);
   }
 
-  updatePassword(id: string, dto: UpdatePasswordDto): UserResponseDto {
+  async updatePassword(
+    id: string,
+    dto: UpdatePasswordDto,
+  ): Promise<UserResponseDto> {
     if (!dto.oldPassword || !dto.newPassword) throw MissingFieldsException();
 
-    const user = this.getUserOrThrow(id);
+    const user = await this.getUserOrThrow(id);
 
     if (user.password !== dto.oldPassword) throw InvalidOldPasswordException();
 
@@ -53,17 +61,18 @@ export class UserService {
     user.version++;
     user.updatedAt = Date.now();
 
+    await this.userRepository.update(id, user);
     return plainToInstance(UserResponseDto, user);
   }
 
-  delete(id: string): void {
-    const user = this.getUserOrThrow(id);
-    this.storage.users = this.storage.users.filter((u) => u.id !== user.id);
+  async delete(id: string): Promise<void> {
+    await this.getUserOrThrow(id);
+    await this.userRepository.delete(id);
   }
 
-  private getUserOrThrow(id: string): User {
+  private async getUserOrThrow(id: string): Promise<User> {
     if (!isUUID(id)) throw InvalidUUIDException();
-    const user = this.storage.users.find((user) => user.id === id);
+    const user = await this.userRepository.findOneBy({ id });
     if (!user) throw UserNotFoundException();
     return user;
   }
