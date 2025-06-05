@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TrackService } from './track.service';
 import { TrackController } from './track.controller';
-import { StorageModule } from '../storage/storage.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Track } from './entities/track.entity';
 
 @Module({
-  imports: [StorageModule, TypeOrmModule.forFeature([Track])],
+  imports: [TypeOrmModule.forFeature([Track])],
   controllers: [TrackController],
   providers: [TrackService],
 })
