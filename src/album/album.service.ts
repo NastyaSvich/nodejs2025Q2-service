@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { v4 as uuidv4, validate as isUUID } from 'uuid';
 import { Album } from './entities/album.entity';
 import { CreateAlbumDto } from './dto/create-album.dto';
@@ -8,71 +8,69 @@ import {
   InvalidUUIDException,
   MissingFieldsException,
 } from '../common/exceptions';
-import { Storage } from '../storage/Storage';
 import { plainToInstance } from 'class-transformer';
 import { AlbumResponseDto } from './dto/album-response.dto';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { ARTIST_DELETED_EVENT } from '../artist/artist.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 export const ALBUM_DELETED_EVENT = 'album.deleted' as const;
 
 @Injectable()
 export class AlbumService {
   constructor(
-    @Inject('STORAGE') private readonly storage: Storage,
+    @InjectRepository(Album)
+    private readonly albumRepository: Repository<Album>,
     private readonly emitter: EventEmitter2,
   ) {}
 
   @OnEvent(ARTIST_DELETED_EVENT)
-  onArtistDeleted(id: string) {
-    this.storage.albums.forEach((album: Album) => {
-      if (album.artistId === id) {
-        album.artistId = null;
-      }
-    });
+  async onArtistDeleted(id: string) {
+    await this.albumRepository.update({ artistId: id }, { artistId: null });
   }
 
-  getAll(): AlbumResponseDto[] {
-    return plainToInstance(AlbumResponseDto, this.storage.albums);
+  async getAll(): Promise<AlbumResponseDto[]> {
+    const albums = await this.albumRepository.find();
+    return plainToInstance(AlbumResponseDto, albums);
   }
 
-  getById(id: string): AlbumResponseDto {
-    const album = this.getAlbumOrThrow(id);
+  async getById(id: string): Promise<AlbumResponseDto> {
+    const album = await this.getAlbumOrThrow(id);
     return plainToInstance(AlbumResponseDto, album);
   }
 
-  create(dto: CreateAlbumDto): AlbumResponseDto {
+  async create(dto: CreateAlbumDto): Promise<AlbumResponseDto> {
     this.validateOnRequiredFields(dto);
 
-    const newAlbum: Album = {
+    const newAlbum = this.albumRepository.create({
       id: uuidv4(),
       name: dto.name,
       year: dto.year,
       artistId: dto.artistId ?? null,
-    };
+    });
 
-    this.storage.albums.push(newAlbum);
-    return plainToInstance(AlbumResponseDto, newAlbum);
+    const savedAlbum = await this.albumRepository.save(newAlbum);
+    return plainToInstance(AlbumResponseDto, savedAlbum);
   }
 
-  update(id: string, dto: UpdateAlbumDto): AlbumResponseDto {
+  async update(id: string, dto: UpdateAlbumDto): Promise<AlbumResponseDto> {
     this.validateOnRequiredFields(dto);
+    await this.getAlbumOrThrow(id);
 
-    const album = this.getAlbumOrThrow(id);
-    Object.assign(album, dto);
-
-    return plainToInstance(AlbumResponseDto, album);
+    const updatedAlbum = this.albumRepository.update(id, dto);
+    return plainToInstance(AlbumResponseDto, updatedAlbum);
   }
 
-  delete(id: string): void {
-    const album = this.getAlbumOrThrow(id);
-    this.storage.albums = this.storage.albums.filter((a) => a.id !== album.id);
+  async delete(id: string): Promise<void> {
+    await this.getAlbumOrThrow(id);
+    await this.albumRepository.delete(id);
     this.emitter.emit(ALBUM_DELETED_EVENT, id);
   }
 
-  private getAlbumOrThrow(id: string): Album {
+  private async getAlbumOrThrow(id: string): Promise<Album> {
     if (!isUUID(id)) throw InvalidUUIDException();
-    const album = this.storage.albums.find((album) => album.id === id);
+    const album = await this.albumRepository.findOneBy({ id });
     if (!album) throw AlbumNotFoundException();
     return album;
   }

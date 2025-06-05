@@ -37,11 +37,11 @@ export class ArtistService {
   async create(dto: CreateArtistDto): Promise<ArtistResponseDto> {
     this.validateOnRequiredFields(dto);
 
-    const newArtist: Artist = {
+    const newArtist = this.artistRepository.create({
       id: uuidv4(),
       name: dto.name,
       grammy: dto.grammy,
-    };
+    });
 
     const savedArtist = await this.artistRepository.save(newArtist);
     return plainToInstance(ArtistResponseDto, savedArtist);
