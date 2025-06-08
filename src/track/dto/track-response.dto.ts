@@ -1,4 +1,6 @@
-import { Expose, Exclude } from 'class-transformer';
+import { Expose, Exclude, Transform } from 'class-transformer';
+import { Artist } from '../../artist/entities/artist.entity';
+import { Album } from '../../album/entities/album.entity';
 
 @Exclude()
 export class TrackResponseDto {
@@ -8,9 +10,15 @@ export class TrackResponseDto {
   @Expose()
   name: string;
 
+  @Transform(
+    ({ obj }: { obj: { artist?: Artist | null } }) => obj.artist?.id ?? null,
+  )
   @Expose()
   artistId: string | null;
 
+  @Transform(
+    ({ obj }: { obj: { album?: Album | null } }) => obj.album?.id ?? null,
+  )
   @Expose()
   albumId: string | null;
 

@@ -10,28 +10,21 @@ import {
 } from '../common/exceptions';
 import { plainToInstance } from 'class-transformer';
 import { AlbumResponseDto } from './dto/album-response.dto';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { ARTIST_DELETED_EVENT } from '../artist/artist.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
-export const ALBUM_DELETED_EVENT = 'album.deleted' as const;
+import { Artist } from '../artist/entities/artist.entity';
 
 @Injectable()
 export class AlbumService {
   constructor(
     @InjectRepository(Album)
     private readonly albumRepository: Repository<Album>,
-    private readonly emitter: EventEmitter2,
+    @InjectRepository(Artist)
+    private readonly artistRepository: Repository<Artist>,
   ) {}
 
-  @OnEvent(ARTIST_DELETED_EVENT)
-  async onArtistDeleted(id: string) {
-    await this.albumRepository.update({ artistId: id }, { artistId: null });
-  }
-
   async getAll(): Promise<AlbumResponseDto[]> {
-    const albums = await this.albumRepository.find();
+    const albums = await this.albumRepository.find({ relations: ['artist'] });
     return plainToInstance(AlbumResponseDto, albums);
   }
 
@@ -43,11 +36,15 @@ export class AlbumService {
   async create(dto: CreateAlbumDto): Promise<AlbumResponseDto> {
     this.validateOnRequiredFields(dto);
 
+    const artist = dto.artistId
+      ? await this.artistRepository.findOne({ where: { id: dto.artistId } })
+      : null;
+
     const newAlbum = this.albumRepository.create({
       id: uuidv4(),
       name: dto.name,
       year: dto.year,
-      artistId: dto.artistId ?? null,
+      artist: artist,
     });
 
     const savedAlbum = await this.albumRepository.save(newAlbum);
@@ -56,26 +53,36 @@ export class AlbumService {
 
   async update(id: string, dto: UpdateAlbumDto): Promise<AlbumResponseDto> {
     this.validateOnRequiredFields(dto);
-    await this.getAlbumOrThrow(id);
+    const album = await this.getAlbumOrThrow(id);
 
-    const updatedAlbum = this.albumRepository.update(id, dto);
+    const artist = dto.artistId
+      ? await this.artistRepository.findOneBy({ id: dto.artistId })
+      : null;
+
+    album.name = dto.name;
+    album.year = dto.year;
+    album.artist = artist;
+
+    const updatedAlbum = await this.albumRepository.save(album);
     return plainToInstance(AlbumResponseDto, updatedAlbum);
   }
 
   async delete(id: string): Promise<void> {
     await this.getAlbumOrThrow(id);
     await this.albumRepository.delete(id);
-    this.emitter.emit(ALBUM_DELETED_EVENT, id);
   }
 
   private async getAlbumOrThrow(id: string): Promise<Album> {
     if (!isUUID(id)) throw InvalidUUIDException();
-    const album = await this.albumRepository.findOneBy({ id });
+    const album = await this.albumRepository.findOne({
+      where: { id },
+      relations: ['artist'],
+    });
     if (!album) throw AlbumNotFoundException();
     return album;
   }
 
-  private validateOnRequiredFields<T extends Omit<Album, 'id'>>(dto: T) {
+  private validateOnRequiredFields<T extends Partial<Album>>(dto: T) {
     if (!dto.name) throw MissingFieldsException();
   }
 }

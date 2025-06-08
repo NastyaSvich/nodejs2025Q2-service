@@ -10,34 +10,26 @@ import {
 } from '../common/exceptions';
 import { plainToInstance } from 'class-transformer';
 import { TrackResponseDto } from './dto/track-response.dto';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { ARTIST_DELETED_EVENT } from '../artist/artist.service';
-import { ALBUM_DELETED_EVENT } from '../album/album.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
-export const TRACK_DELETED_EVENT = 'track.deleted' as const;
+import { Artist } from '../artist/entities/artist.entity';
+import { Album } from '../album/entities/album.entity';
 
 @Injectable()
 export class TrackService {
   constructor(
     @InjectRepository(Track)
     private readonly trackRepository: Repository<Track>,
-    private readonly emitter: EventEmitter2,
+    @InjectRepository(Artist)
+    private readonly artistRepository: Repository<Artist>,
+    @InjectRepository(Album)
+    private readonly albumRepository: Repository<Album>,
   ) {}
 
-  @OnEvent(ARTIST_DELETED_EVENT)
-  async onArtistDeleted(id: string) {
-    await this.trackRepository.update({ artistId: id }, { artistId: null });
-  }
-
-  @OnEvent(ALBUM_DELETED_EVENT)
-  async onAlbumDeleted(id: string) {
-    await this.trackRepository.update({ albumId: id }, { albumId: null });
-  }
-
   async getAll(): Promise<TrackResponseDto[]> {
-    const tracks = await this.trackRepository.find();
+    const tracks = await this.trackRepository.find({
+      relations: ['artist', 'album'],
+    });
     return plainToInstance(TrackResponseDto, tracks);
   }
 
@@ -49,11 +41,19 @@ export class TrackService {
   async create(dto: CreateTrackDto): Promise<TrackResponseDto> {
     this.validateOnRequiredFields(dto);
 
+    const artist = dto.artistId
+      ? await this.artistRepository.findOne({ where: { id: dto.artistId } })
+      : null;
+
+    const album = dto.albumId
+      ? await this.albumRepository.findOne({ where: { id: dto.albumId } })
+      : null;
+
     const newTrack = this.trackRepository.create({
       id: uuidv4(),
       name: dto.name,
-      artistId: dto.artistId ?? null,
-      albumId: dto.albumId ?? null,
+      artist,
+      album,
       duration: dto.duration,
     });
 
@@ -63,26 +63,41 @@ export class TrackService {
 
   async update(id: string, dto: UpdateTrackDto): Promise<TrackResponseDto> {
     this.validateOnRequiredFields(dto);
-    await this.getTrackOrThrow(id);
+    const track = await this.getTrackOrThrow(id);
 
-    const updatedTrack = await this.trackRepository.update(id, dto);
+    const artist = dto.artistId
+      ? await this.artistRepository.findOneBy({ id: dto.artistId })
+      : null;
+
+    const album = dto.albumId
+      ? await this.albumRepository.findOneBy({ id: dto.albumId })
+      : null;
+
+    track.name = dto.name;
+    track.duration = dto.duration;
+    track.artist = artist;
+    track.album = album;
+
+    const updatedTrack = await this.trackRepository.save(track);
     return plainToInstance(TrackResponseDto, updatedTrack);
   }
 
   async delete(id: string): Promise<void> {
     await this.getTrackOrThrow(id);
     await this.trackRepository.delete(id);
-    this.emitter.emit(TRACK_DELETED_EVENT, id);
   }
 
   private async getTrackOrThrow(id: string): Promise<Track> {
     if (!isUUID(id)) throw InvalidUUIDException();
-    const track = await this.trackRepository.findOneBy({ id });
+    const track = await this.trackRepository.findOne({
+      where: { id },
+      relations: ['artist', 'album'],
+    });
     if (!track) throw TrackNotFoundException();
     return track;
   }
 
-  private validateOnRequiredFields<T extends Omit<Track, 'id'>>(dto: T) {
+  private validateOnRequiredFields<T extends Partial<Track>>(dto: T) {
     if (!dto.name || dto.duration === undefined) throw MissingFieldsException();
   }
 }

@@ -1,18 +1,18 @@
-import { Artist } from '../../artist/entities/artist.entity';
-import { Album } from '../../album/entities/album.entity';
-import { Track } from '../../track/entities/track.entity';
 import { Exclude, Expose } from 'class-transformer';
+import { ArtistResponseDto } from '../../artist/dto/artist-response.dto';
+import { AlbumResponseDto } from '../../album/dto/album-response.dto';
+import { TrackResponseDto } from '../../track/dto/track-response.dto';
 
 @Exclude()
 export class FavoritesResponseDto {
   @Expose()
-  artists: Artist[];
+  artists: ArtistResponseDto[];
 
   @Expose()
-  albums: Album[];
+  albums: AlbumResponseDto[];
 
   @Expose()
-  tracks: Track[];
+  tracks: TrackResponseDto[];
 
   constructor(partial: Partial<FavoritesResponseDto>) {
     Object.assign(this, partial);

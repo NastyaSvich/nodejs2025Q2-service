@@ -1,115 +1,123 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { validate as isUUID } from 'uuid';
-import { Storage } from '../storage/Storage';
+import { AlbumResponseDto } from './../album/dto/album-response.dto';
+import { plainToInstance } from 'class-transformer';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
+import { Album } from 'src/album/entities/album.entity';
+import { Artist } from 'src/artist/entities/artist.entity';
+import { Track } from 'src/track/entities/track.entity';
+import { Favorites } from 'src/favorites/entities/favorites.entity';
+import { FavoritesResponseDto } from 'src/favorites/dto/favorites-response.dto';
+import { ArtistResponseDto } from 'src/artist/dto/artist-response.dto';
+import { TrackResponseDto } from 'src/track/dto/track-response.dto';
 import {
-  InvalidUUIDException,
   EntityNotFoundException,
+  InvalidUUIDException,
 } from '../common/exceptions';
-import { FavoritesResponseDto } from './dto/favorites-response.dto';
-import { Artist } from '../artist/entities/artist.entity';
-import { Album } from '../album/entities/album.entity';
-import { Track } from '../track/entities/track.entity';
-import { OnEvent } from '@nestjs/event-emitter';
-import { ARTIST_DELETED_EVENT } from '../artist/artist.service';
-import { ALBUM_DELETED_EVENT } from '../album/album.service';
-import { TRACK_DELETED_EVENT } from '../track/track.service';
+import { validate as isUUID } from 'uuid';
 
 @Injectable()
 export class FavoritesService {
-  constructor(@Inject('STORAGE') private readonly storage: Storage) {}
+  constructor(
+    @InjectRepository(Artist)
+    private readonly artistRepository: Repository<Artist>,
+    @InjectRepository(Album)
+    private readonly albumRepository: Repository<Album>,
+    @InjectRepository(Track)
+    private readonly trackRepository: Repository<Track>,
+    @InjectRepository(Favorites)
+    private readonly favoritesRepository: Repository<Favorites>,
+  ) {}
 
-  @OnEvent(ARTIST_DELETED_EVENT)
-  onArtistDeleted(id: string) {
-    const index = this.storage.favorites.artists.indexOf(id);
-    if (index !== -1) this.storage.favorites.artists.splice(index, 1);
+  async getOrCreateFavorites(): Promise<Favorites> {
+    let favorites = await this.favoritesRepository.findOne({
+      where: { id: 'default' },
+      relations: [
+        'artists',
+        'albums',
+        'albums.artist',
+        'tracks',
+        'tracks.artist',
+        'tracks.album',
+      ],
+    });
+    if (!favorites) {
+      favorites = this.favoritesRepository.create({
+        id: 'default',
+        artists: [],
+        albums: [],
+        tracks: [],
+      });
+      await this.favoritesRepository.save(favorites);
+    }
+    return favorites!;
   }
 
-  @OnEvent(ALBUM_DELETED_EVENT)
-  onAlbumDeleted(id: string) {
-    const index = this.storage.favorites.albums.indexOf(id);
-    if (index !== -1) this.storage.favorites.albums.splice(index, 1);
-  }
-
-  @OnEvent(TRACK_DELETED_EVENT)
-  onTrackDeleted(id: string) {
-    const index = this.storage.favorites.tracks.indexOf(id);
-    if (index !== -1) this.storage.favorites.tracks.splice(index, 1);
-  }
-
-  getAll(): FavoritesResponseDto {
-    const { favorites, tracks, albums, artists } = this.storage;
-
-    const trackList: Track[] = favorites.tracks.map((id) =>
-      tracks.find((track) => track.id === id),
-    );
-    const albumList: Album[] = favorites.albums.map((id) =>
-      albums.find((album) => album.id === id),
-    );
-    const artistList: Artist[] = favorites.artists.map((id) =>
-      artists.find((artist) => artist.id === id),
-    );
+  async getAll(): Promise<FavoritesResponseDto> {
+    const favorites = await this.getOrCreateFavorites();
 
     return {
-      tracks: trackList,
-      albums: albumList,
-      artists: artistList,
+      artists: plainToInstance(ArtistResponseDto, favorites?.artists || []),
+      albums: plainToInstance(AlbumResponseDto, favorites?.albums) || [],
+      tracks: plainToInstance(TrackResponseDto, favorites?.tracks || []),
     };
   }
 
-  addTrack(id: string) {
-    this.add(id, 'tracks', this.storage.tracks);
+  async addTrack(id: string): Promise<void> {
+    await this.add(id, 'tracks', this.trackRepository);
   }
 
-  deleteTrack(id: string) {
-    this.delete(id, 'tracks');
+  async deleteTrack(id: string): Promise<void> {
+    await this.delete(id, 'tracks');
   }
 
-  addAlbum(id: string) {
-    this.add(id, 'albums', this.storage.albums);
+  async addAlbum(id: string): Promise<void> {
+    await this.add(id, 'albums', this.albumRepository);
   }
 
-  deleteAlbum(id: string) {
-    this.delete(id, 'albums');
+  async deleteAlbum(id: string): Promise<void> {
+    await this.delete(id, 'albums');
   }
 
-  addArtist(id: string) {
-    this.add(id, 'artists', this.storage.artists);
+  async addArtist(id: string): Promise<void> {
+    await this.add(id, 'artists', this.artistRepository);
   }
 
-  deleteArtist(id: string) {
-    this.delete(id, 'artists');
+  async deleteArtist(id: string): Promise<void> {
+    await this.delete(id, 'artists');
   }
 
-  private add<T extends Artist | Album | Track>(
+  private async add<T extends Artist | Album | Track>(
     id: string,
-    entityType: keyof Storage['favorites'],
-    entityStorage: T[],
-  ): void {
+    entityType: keyof Favorites,
+    repository: Repository<T>,
+  ): Promise<void> {
     if (!isUUID(id)) throw InvalidUUIDException();
 
-    const entity = entityStorage.find((entity) => entity.id === id);
-
+    const entity = await repository.findOneBy({ id } as FindOptionsWhere<T>);
     if (!entity) {
       throw EntityNotFoundException();
     }
 
-    const favoritesArray = this.storage.favorites[entityType];
-    if (!favoritesArray.includes(entity.id)) {
-      favoritesArray.push(entity.id);
+    const favorites = await this.getOrCreateFavorites();
+    const entities = favorites[entityType] as T[];
+
+    if (!entities.some((e) => e.id === id)) {
+      entities.push(entity);
+      await this.favoritesRepository.save(favorites);
     }
   }
 
-  private delete(
-    id: string,
-    entityType: keyof typeof this.storage.favorites,
-  ): void {
+  private async delete(id: string, entityType: keyof Favorites): Promise<void> {
     if (!isUUID(id)) throw InvalidUUIDException();
 
-    const favoritesArray = this.storage.favorites[entityType];
-    const index = favoritesArray.indexOf(id);
+    const favorites = await this.getOrCreateFavorites();
+    const entities = favorites[entityType] as { id: string }[];
 
+    const index = entities.findIndex((e) => e.id === id);
     if (index === -1) throw EntityNotFoundException();
 
-    favoritesArray.splice(index, 1);
+    entities.splice(index, 1);
+    await this.favoritesRepository.save(favorites);
   }
 }

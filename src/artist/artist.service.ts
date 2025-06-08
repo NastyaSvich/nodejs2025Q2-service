@@ -9,19 +9,15 @@ import {
   ArtistNotFoundException,
 } from '../common/exceptions';
 import { plainToInstance } from 'class-transformer';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ArtistResponseDto } from './dto/artist-response.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
-export const ARTIST_DELETED_EVENT = 'artist.deleted' as const;
 
 @Injectable()
 export class ArtistService {
   constructor(
     @InjectRepository(Artist)
     private readonly artistRepository: Repository<Artist>,
-    private readonly emitter: EventEmitter2,
   ) {}
 
   async getAll(): Promise<ArtistResponseDto[]> {
@@ -58,7 +54,6 @@ export class ArtistService {
   async delete(id: string): Promise<void> {
     await this.getArtistOrThrow(id);
     await this.artistRepository.delete(id);
-    this.emitter.emit(ARTIST_DELETED_EVENT, id);
   }
 
   private async getArtistOrThrow(id: string): Promise<Artist> {
@@ -68,7 +63,9 @@ export class ArtistService {
     return artist;
   }
 
-  private validateOnRequiredFields<T extends Omit<Artist, 'id'>>(dto: T) {
+  private validateOnRequiredFields<T extends Omit<Artist, 'id' | 'favorites'>>(
+    dto: T,
+  ) {
     if (!dto.name || dto.grammy === undefined) throw MissingFieldsException();
   }
 }

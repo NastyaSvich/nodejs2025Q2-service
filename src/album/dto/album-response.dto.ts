@@ -1,4 +1,5 @@
-import { Expose, Exclude } from 'class-transformer';
+import { Expose, Exclude, Transform } from 'class-transformer';
+import { Artist } from '../../artist/entities/artist.entity';
 
 @Exclude()
 export class AlbumResponseDto {
@@ -11,6 +12,9 @@ export class AlbumResponseDto {
   @Expose()
   year: number;
 
+  @Transform(
+    ({ obj }: { obj: { artist?: Artist | null } }) => obj.artist?.id ?? null,
+  )
   @Expose()
   artistId: string | null;
 

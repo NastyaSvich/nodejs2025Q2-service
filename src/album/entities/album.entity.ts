@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToMany,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Favorites } from '../../favorites/entities/favorites.entity';
+import { Artist } from '../../artist/entities/artist.entity';
 
 @Entity()
 export class Album {
@@ -11,6 +19,13 @@ export class Album {
   @Column()
   year: number;
 
-  @Column('uuid', { nullable: true })
-  artistId: string | null;
+  @ManyToOne(() => Artist, {
+    nullable: true,
+    onDelete: 'SET NULL',
+    eager: false,
+  })
+  artist: Artist | null;
+
+  @ManyToMany(() => Favorites, (favorites) => favorites.albums)
+  favorites: Favorites[];
 }

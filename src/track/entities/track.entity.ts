@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToMany,
+  ManyToOne,
+} from 'typeorm';
+import { Favorites } from '../../favorites/entities/favorites.entity';
+import { Artist } from '../../artist/entities/artist.entity';
+import { Album } from '../../album/entities/album.entity';
 
 @Entity()
 export class Track {
@@ -8,12 +17,23 @@ export class Track {
   @Column()
   name: string;
 
-  @Column('uuid', { nullable: true })
-  artistId: string | null;
+  @ManyToOne(() => Artist, {
+    nullable: true,
+    onDelete: 'SET NULL',
+    eager: false,
+  })
+  artist: Artist | null;
 
-  @Column('uuid', { nullable: true })
-  albumId: string | null;
+  @ManyToOne(() => Album, {
+    nullable: true,
+    onDelete: 'SET NULL',
+    eager: false,
+  })
+  album: Album | null;
 
   @Column()
   duration: number;
+
+  @ManyToMany(() => Favorites, (favorites) => favorites.tracks)
+  favorites: Favorites[];
 }
