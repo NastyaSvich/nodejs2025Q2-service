@@ -27,11 +27,13 @@ pycache
 Thumbs.db
 
 # Docker
-Dockerfile
+Dockerfile-db
+Dockerfile-app
 .dockerignore
 
 # Config
 *.env
+*.env.*
 docker-compose.yml
 
 # Logs
@@ -39,8 +41,8 @@ docker-compose.yml
 logs
 
 # Other
+doc
 *.swp
 *.swo
 *.bak
 *.tmp
-.*

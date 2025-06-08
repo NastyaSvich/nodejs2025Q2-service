@@ -20,7 +20,7 @@ async function bootstrap() {
   SwaggerModule.setup('doc', app, parse(swaggerFile));
 
   const configService = app.get(ConfigService);
-  const PORT = configService.get('PORT') || 4000;
+  const PORT = configService.get('APP_PORT') || 4000;
   await app.listen(PORT);
   console.log(`App has been started on the port ${PORT}`);
 }
