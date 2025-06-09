@@ -1,0 +1,45 @@
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile-db
+    container_name: postgres
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_HOST_PORT}:${POSTGRES_CONTAINER_PORT}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_logs:/var/log/postgresql
+    networks:
+      - app-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile-app
+    container_name: app
+    depends_on:
+      - postgres
+    restart: always
+    command: npm run start:dev
+    env_file:
+      - .env
+    environment:
+      - PORT=${APP_PORT}
+    ports:
+      - "${APP_HOST_PORT}:${APP_PORT}"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  postgres_logs:
+
+networks:
+  app-network:
+    driver: bridge
