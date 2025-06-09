@@ -32,6 +32,7 @@ services:
       - "${APP_HOST_PORT}:${APP_PORT}"
     volumes:
       - .:/usr/src/app
+      - /usr/src/app/node_modules
     networks:
       - app-network
 
