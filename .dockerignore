@@ -41,8 +41,8 @@ docker-compose.yml
 logs
 
 # Other
-doc
 *.swp
 *.swo
 *.bak
 *.tmp
+.*

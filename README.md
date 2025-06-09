@@ -2,15 +2,22 @@
 
 ## Prerequisites
 
+- Install Docker
+- Create file .env (use .env.example as a basis)
+- To install all dependencies use npm install
 - Git - [Download & Install Git](https://git-scm.com/downloads).
 - Node.js - [Download & Install Node.js](https://nodejs.org/en/download/) and the npm package manager.
-- To install all dependencies use npm install
-- Create file .env (use .env.example as a basis)
+
+## Scanning application
+
+```
+npm start
+```
 
 ## Running application
 
 ```
-npm start
+docker-compose up --build
 ```
 
 After starting the app on port (4000 as default) you can open
