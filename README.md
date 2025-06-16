@@ -25,10 +25,16 @@ docker scout cves
 
 After application running open new terminal and enter:
 
-To run all tests with authorization
+### To run all tests with authorization
 
 ```
 docker exec -it app sh -c "npm run test:auth"
+```
+
+### To run tests with refresh token
+
+```
+docker exec -it app sh -c "npm run test:refresh"
 ```
 
 ## Auto-fix and format
