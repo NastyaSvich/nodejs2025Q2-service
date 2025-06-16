@@ -40,7 +40,7 @@ async function bootstrap() {
     logger.error(`Unhandled Rejection: ${reason}`);
   });
 
-  loggrt.log(`App has been started on the port ${PORT}`);
+  logger.log(`App has been started on the port ${PORT}`);
 
   await app.listen(PORT);
 }
