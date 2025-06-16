@@ -10,7 +10,6 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggingService } from './common/logging/logging.service';
 import { AuthModule } from './auth/auth.module';
-import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [

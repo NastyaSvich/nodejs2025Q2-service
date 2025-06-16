@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -29,7 +34,7 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Invalid login or password');
     }
-    console.log(user);
+
     return user;
   }
 
@@ -49,8 +54,14 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify(refreshToken);
       return this.login({ id: payload.userId, login: payload.login });
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new HttpException('Refresh token expired', HttpStatus.FORBIDDEN);
+      }
+      if (error.name === 'JsonWebTokenError') {
+        throw new HttpException('Invalid refresh token', HttpStatus.FORBIDDEN);
+      }
+      throw new HttpException('Invalid refresh token', HttpStatus.FORBIDDEN);
     }
   }
 }
