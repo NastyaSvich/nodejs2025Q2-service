@@ -31,6 +31,16 @@ export class UserService {
     return plainToInstance(UserResponseDto, user);
   }
 
+  async findByLogin(login: string): Promise<User> {
+    const user = await this.userRepository.findOneBy({ login });
+
+    if (!user) {
+      throw UserNotFoundException();
+    }
+
+    return user;
+  }
+
   async create(dto: CreateUserDto): Promise<UserResponseDto> {
     if (!dto.login || !dto.password) throw MissingFieldsException();
 

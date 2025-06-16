@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   UnprocessableEntityException,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 export const InvalidUUIDException = () =>
@@ -28,3 +29,12 @@ export const AlbumNotFoundException = () =>
 
 export const EntityNotFoundException = () =>
   new UnprocessableEntityException('Unprocessable entity');
+
+export const MissingRefreshTokenException = () =>
+  new UnauthorizedException('Refresh token is required');
+
+export const InvalidLoginOrPasswordException = () =>
+  new UnauthorizedException('Invalid login or password');
+
+export const InvalidRefreshTokenException = () =>
+  new ForbiddenException('Invalid refresh token');

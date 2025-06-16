@@ -8,6 +8,8 @@ import { ArtistModule } from './artist/artist.module';
 import { AlbumModule } from './album/album.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LoggingService } from './common/logging/logging.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -31,8 +33,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     ArtistModule,
     AlbumModule,
     FavoritesModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, LoggingService],
+  exports: [LoggingService],
 })
 export class AppModule {}
