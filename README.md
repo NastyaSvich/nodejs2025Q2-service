@@ -25,31 +25,13 @@ docker scout cves
 
 After application running open new terminal and enter:
 
-To run all tests without authorization
-
-```
-docker exec -it app sh -c "npm run test"
-```
-
-To run only one of all test suites
-
-```
-docker exec -it app sh -c "npm run test -- <path to suite>"
-```
-
-To run all test with authorization
+To run all tests with authorization
 
 ```
 docker exec -it app sh -c "npm run test:auth"
 ```
 
-To run only specific test suite with authorization
-
-```
-docker exec -it app sh -c "npm run test:auth -- <path to suite>"
-```
-
-### Auto-fix and format
+## Auto-fix and format
 
 ```
 docker exec -it app sh -c "npm run lint"
@@ -59,7 +41,7 @@ docker exec -it app sh -c "npm run lint"
 docker exec -it app sh -c "npm run format"
 ```
 
-### Debugging in VSCode
+## Debugging in VSCode
 
 Press <kbd>F5</kbd> to debug.
 
