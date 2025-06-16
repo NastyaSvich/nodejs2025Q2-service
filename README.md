@@ -37,6 +37,10 @@ docker exec -it app sh -c "npm run test:auth"
 docker exec -it app sh -c "npm run test:refresh"
 ```
 
+## Logs
+
+Logs are located at the logs folder in the root (app.log and error.log).
+
 ## Auto-fix and format
 
 ```
