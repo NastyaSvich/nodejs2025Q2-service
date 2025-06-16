@@ -117,7 +117,7 @@ security:
   - bearerAuth: []
 
 paths:
-  /login:
+  /auth/login:
     post:
       tags:
         - Login
@@ -149,16 +149,18 @@ paths:
               schema:
                 type: object
                 properties:
-                  token:
+                  accessToken:
+                    type: string
+                  refreshToken:
                     type: string
                 description: JWT Token
         403:
           description: Incorrect login or password
-  /signup:
+  /auth/signup:
     post:
       tags:
         - Signup
-      security: [ ]
+      security: []
       summary: Signup
       description: Signup a user
       requestBody:
@@ -183,7 +185,44 @@ paths:
                 - login
                 - password
       responses:
-        204:
+        200:
+          description: Successful token refresh.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                description: JWT Token
+        401:
+          description: Bad request
+        403:
+          description: Refresh token is invalid or expired
+  /auth/refresh:
+    post:
+      tags:
+        - Refresh
+      security: []
+      summary: Refresh
+      description: Refresh a token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: example
+              properties:
+                refreshToken:
+                  type: string
+                  required: true
+              required:
+                - refreshToken
+      responses:
+        200:
           description: Successful signup
         400:
           description: Bad request
